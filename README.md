@@ -1,2 +1,2 @@
-# djdownloader
-Django Downloader
+# DjDownloader: Django Download Worker
+
