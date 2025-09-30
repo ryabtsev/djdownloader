@@ -11,7 +11,7 @@ logging.basicConfig(level=logging.INFO)
 
 class Storage:
     """
-    TODO: association with django Task model
+    TODO: association with Task model
     """
     def __init__(
             self, 
@@ -48,8 +48,8 @@ class RequestsHandler:
     """
     Handles concurrent and resumable file downloads.
     
-    TODO: association with django Task model
-    TODO: add tracking in the model 
+    TODO: association with Task model
+    TODO: add tracking in the Task model (log field)
     """
     def __init__(self, storage: Storage):
         self.storage = storage
@@ -74,7 +74,7 @@ class RequestsHandler:
                 response.raise_for_status()
                 
                 total_size = int(response.headers.get('content-length', 0))
-                if resume_byte_pos > 0 and response.status == 206: # Partial Content
+                if resume_byte_pos > 0 and response.status == 206:  # Partial Content
                     total_size += resume_byte_pos
                 
                 if resume_byte_pos >= total_size and total_size != 0:
@@ -100,24 +100,29 @@ class RequestsHandler:
         except Exception as e:
             logging.error(f"An unexpected error occurred for {file_name}: {e}")
 
-    async def run(self, urls: list[str]):
+    async def run(self, urls: list[str]):  # TODO: urls -> tasks
         async with aiohttp.ClientSession() as session:
             tasks = []
             for url in urls:
-                # The backoff library returns a decorated function.
+                # The backoff module returns a decorated function.
                 # To handle exceptions within the asyncio.gather, we create a wrapper.
                 async def download_wrapper(url):
+                    # TODO: Intergration with Task model 
                     try:
                         await self.download_file(session, url)
                     except aiohttp.ClientError as e:
+                        # TODO: Task still in progress and re-queued for the next worker iteration."
                         logging.error(f"Failed to download {url} after all retries.")
+                    else:
+                        # TODO: Task finished
+                        pass
                 tasks.append(download_wrapper(url))
             await asyncio.gather(*tasks)
 
 
 async def run():
     """
-    TODO: integration with django Task model
+    TODO: integration with Task model
     """
     urls = []
     
