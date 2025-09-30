@@ -4,12 +4,20 @@ import os
 import logging
 from urllib.parse import urlparse
 
+from django.conf import settings
+
+logging.basicConfig(level=logging.INFO)
+
 
 class Storage:
     """
     TODO: association with django Task model
     """
-    def __init__(self, partial_dir='partial', completed_dir='completed'):
+    def __init__(
+            self, 
+            partial_dir=settings.MEDIA_ROOT / 'partial', 
+            completed_dir=settings.MEDIA_ROOT / 'completed'
+        ):
         self.partial_dir = partial_dir
         self.completed_dir = completed_dir
         os.makedirs(self.partial_dir, exist_ok=True)
@@ -106,16 +114,13 @@ class RequestsHandler:
                 tasks.append(download_wrapper(url))
             await asyncio.gather(*tasks)
 
-async def main():
+
+async def run():
     """
     TODO: integration with django Task model
-
     """
     urls = []
     
     storage = Storage()
     requests_handler = RequestsHandler(storage)
     await requests_handler.run(urls)
-
-if __name__ == "__main__":
-    asyncio.run(main())
