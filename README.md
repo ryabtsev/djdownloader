@@ -21,6 +21,8 @@ INSTALLED_APPS = [
 
 Other settings: TBD
 
+`mysite/*` is example of installation
+
 ## Start Instant Background Download Worker 
 
 ```bash
