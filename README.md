@@ -40,18 +40,3 @@ python manage.py djdownloader
 
 *   Splitting a single file into chunks to download simultaneously.
 *   User-facing enhancements.
-
-## PYPI publising:
-
-1. Fix version 
-
-2. Build
-
-```bash
-$ python -m build
-```
-
-3. Upload to pypi
-```bash
-$ python -m twine upload dist/*
-```
