@@ -8,6 +8,8 @@ from django.conf import settings
 
 from .models import Task
 from .storage import Storage
+from .backoff import async_backoff
+
 
 logging.basicConfig(level=logging.INFO)
 
@@ -22,7 +24,7 @@ class RequestsHandler:
     def __init__(self, storage: Storage):
         self.storage = storage
     
-    # TODO: implement backoff decorator
+    @async_backoff(tries=3, delay=2)
     async def download_file(self, session: aiohttp.ClientSession, url: str):
         partial_path = self.storage.get_partial_path(url)
         file_name = self.storage.get_file_name(url)
