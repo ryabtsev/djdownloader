@@ -41,7 +41,8 @@ class RequestsHandler:
             logging.info(f"Resuming download for {file_name} from byte {resume_byte_pos}")
 
         try:
-            async with session.get(url, headers=headers) as response:
+            timeout = aiohttp.ClientTimeout(sock_read=15)
+            async with session.get(url, headers=headers, timeout=timeout) as response:
                 response.raise_for_status()
                 
                 total_size = int(response.headers.get('content-length', 0))
@@ -64,7 +65,7 @@ class RequestsHandler:
                 else:
                     logging.warning(f"Download incomplete for {file_name}")
 
-        except aiohttp.ClientError as e:
+        except (aiohttp.ClientError, asyncio.TimeoutError) as e:
             logging.error(f"Error downloading {file_name} after multiple retries: {e}")
             raise  # Re-raise the exception to be handled by the backoff decorator
         except Exception as e:
@@ -86,7 +87,7 @@ class RequestsHandler:
                 async def download_wrapper(url):
                     try:
                         await self.download_file(session, url)
-                    except aiohttp.ClientError as e:
+                    except (aiohttp.ClientError, asyncio.TimeoutError) as e:
                         logging.error(f"Failed to download {url} after all retries.")
                         task.datetime_failed = datetime.now()
 
