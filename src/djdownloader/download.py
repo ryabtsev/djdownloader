@@ -4,8 +4,6 @@ import os
 import logging
 from datetime import datetime
 
-from django.conf import settings
-
 from .models import Task
 from .storage import Storage
 from .backoff import async_backoff
@@ -14,17 +12,19 @@ from .backoff import async_backoff
 logging.basicConfig(level=logging.INFO)
 
 
+MAX_ATTEMS = 10  # max worker iteration for file 
+BACKOFF_MAX_TRIES = 5
+BACKOFF_DELAY = 2
+
 
 class RequestsHandler:
     """
     Handles concurrent and resumable file downloads.
-    
-    TODO: add tracking in the Task model (log field)
     """
     def __init__(self, storage: Storage):
         self.storage = storage
     
-    @async_backoff(tries=3, delay=2)
+    @async_backoff(tries=BACKOFF_MAX_TRIES, delay=BACKOFF_DELAY)
     async def download_file(self, session: aiohttp.ClientSession, url: str):
         partial_path = self.storage.get_partial_path(url)
         file_name = self.storage.get_file_name(url)
@@ -70,6 +70,9 @@ class RequestsHandler:
             logging.error(f"An unexpected error occurred for {file_name}: {e}")
 
     async def run(self, tasks: list):
+        """
+        TODO: add tracking in the Task model (log field)
+        """
         async with aiohttp.ClientSession() as session:
             coroutines = []
             for task in tasks:
@@ -79,8 +82,6 @@ class RequestsHandler:
                 task.attempts += 1
                 await task.asave()
 
-                # The backoff module returns a decorated function.
-                # To handle exceptions within the asyncio.gather, we create a wrapper.
                 async def download_wrapper(url):
                     try:
                         await self.download_file(session, url)
@@ -88,8 +89,7 @@ class RequestsHandler:
                         logging.error(f"Failed to download {url} after all retries.")
                         task.datetime_failed = datetime.now()
 
-                        # TODO: revise case with more than 10 worker iteration
-                        if task.attempts >= 10:
+                        if task.attempts >= MAX_ATTEMS:
                             task.status = Task.Status.FORBIDDEN
                         else:
                             task.status = Task.Status.FAILED
