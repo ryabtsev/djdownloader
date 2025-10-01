@@ -66,7 +66,6 @@ class RequestsHandler:
         except aiohttp.ClientError as e:
             logging.error(f"Error downloading {file_name} after multiple retries: {e}")
             raise  # Re-raise the exception to be handled by the backoff decorator
-            # TODO: Re-queue for next worker iteration
         except Exception as e:
             logging.error(f"An unexpected error occurred for {file_name}: {e}")
 
