@@ -3,7 +3,11 @@ from django.db import models
 
 class TaskManager(models.Manager):
     async def get_new_and_failed_tasks(self):
-        return [task async for task in self.filter(status__in=[Task.Status.NEW, Task.Status.FAILED])]
+        return [task async for task in self.filter(status__in=[
+            Task.Status.NEW, 
+            Task.Status.PROGRESS,
+            Task.Status.FAILED,
+        ])]
 
 
 class Task(models.Model):
