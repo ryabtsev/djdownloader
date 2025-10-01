@@ -2,53 +2,21 @@ import aiohttp
 import asyncio
 import os
 import logging
-from urllib.parse import urlparse
+from datetime import datetime
 
 from django.conf import settings
 
+from .models import Task
+from .storage import Storage
+
 logging.basicConfig(level=logging.INFO)
 
-
-class Storage:
-    """
-    TODO: association with Task model
-    """
-    def __init__(
-            self, 
-            partial_dir=settings.MEDIA_ROOT / 'partial', 
-            completed_dir=settings.MEDIA_ROOT / 'completed'
-        ):
-        self.partial_dir = partial_dir
-        self.completed_dir = completed_dir
-        os.makedirs(self.partial_dir, exist_ok=True)
-        os.makedirs(self.completed_dir, exist_ok=True)
-
-    def get_file_name(self, url: str) -> str:
-        return os.path.basename(urlparse(url).path)
-
-    def get_partial_path(self, url: str) -> str:
-        return os.path.join(self.partial_dir, self.get_file_name(url))
-
-    def get_completed_path(self, url: str) -> str:
-        return os.path.join(self.completed_dir, self.get_file_name(url))
-
-    def get_partial_file_size(self, file_path: str) -> int:
-        if os.path.exists(file_path):
-            return os.path.getsize(file_path)
-        return 0
-
-    def move_to_completed(self, url: str):
-        partial_path = self.get_partial_path(url)
-        completed_path = self.get_completed_path(url)
-        os.rename(partial_path, completed_path)
-        logging.info(f"Moved completed file: {self.get_file_name(url)}")
 
 
 class RequestsHandler:
     """
     Handles concurrent and resumable file downloads.
     
-    TODO: association with Task model
     TODO: add tracking in the Task model (log field)
     """
     def __init__(self, storage: Storage):
@@ -100,32 +68,45 @@ class RequestsHandler:
         except Exception as e:
             logging.error(f"An unexpected error occurred for {file_name}: {e}")
 
-    async def run(self, urls: list[str]):  # TODO: urls -> tasks
+    async def run(self, tasks: list):
         async with aiohttp.ClientSession() as session:
-            tasks = []
-            for url in urls:
+            coroutines = []
+            for task in tasks:
+                url = task.url
+                task.status = Task.Status.PROGRESS
+                task.file_partial = self.storage.get_file_name(url)
+                task.attempts += 1
+                await task.asave()
+
                 # The backoff module returns a decorated function.
                 # To handle exceptions within the asyncio.gather, we create a wrapper.
                 async def download_wrapper(url):
-                    # TODO: Intergration with Task model 
                     try:
                         await self.download_file(session, url)
                     except aiohttp.ClientError as e:
-                        # TODO: Task still in progress and re-queued for the next worker iteration."
                         logging.error(f"Failed to download {url} after all retries.")
+                        task.datetime_failed = datetime.now()
+
+                        # TODO: revise case with more than 10 worker iteration
+                        if task.attempts >= 10:
+                            task.status = Task.Status.FORBIDDEN
+                        else:
+                            task.status = Task.Status.FAILED
                     else:
-                        # TODO: Task finished
-                        pass
-                tasks.append(download_wrapper(url))
-            await asyncio.gather(*tasks)
+                        task.status = Task.Status.READY
+                        task.datetime_ready = datetime.now()
+                        task.file_partial = ''
+                        task.file_completed = self.storage.get_file_name(url)
+                    finally:
+                        await task.asave()
+
+                coroutines.append(download_wrapper(url))
+            await asyncio.gather(*coroutines)
 
 
 async def run():
-    """
-    TODO: integration with Task model
-    """
-    urls = []
+    tasks = await Task.objects.get_new_and_failed_tasks()
     
     storage = Storage()
     requests_handler = RequestsHandler(storage)
-    await requests_handler.run(urls)
+    await requests_handler.run(tasks)

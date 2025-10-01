@@ -1,14 +1,19 @@
 from django.db import models
 
-class Status(models.TextChoices):
-    NEW = 'new', 'New'
-    PROGRESS = 'progress', 'In Progress'
-    READY = 'ready', 'Ready'
-    FAILED = 'failed', 'Failed'
-    FORBIDDEN = 'forbidden', 'Forbidden'
+
+class TaskManager(models.Manager):
+    async def get_new_and_failed_tasks(self):
+        return [task async for task in self.filter(status__in=[Task.Status.NEW, Task.Status.FAILED])]
 
 
 class Task(models.Model):
+    class Status(models.TextChoices):
+        NEW = 'new', 'New'
+        PROGRESS = 'progress', 'In Progress'
+        READY = 'ready', 'Ready'
+        FAILED = 'failed', 'Failed'
+        FORBIDDEN = 'forbidden', 'Forbidden'
+
     url = models.URLField()
     status = models.CharField(max_length=10, choices=Status.choices, default=Status.NEW)
     attempts = models.PositiveIntegerField(default=0)
@@ -20,6 +25,8 @@ class Task(models.Model):
     datetime_created = models.DateTimeField(auto_now_add=True)
     datetime_ready = models.DateTimeField(null=True)
     datetime_failed = models.DateTimeField(null=True)
+
+    objects = TaskManager()
 
     def __str__(self):
         return self.url
