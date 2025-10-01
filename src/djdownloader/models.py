@@ -23,8 +23,8 @@ class Task(models.Model):
     size_partial = models.BigIntegerField(default=0)
     size_completed = models.BigIntegerField(default=0)
     datetime_created = models.DateTimeField(auto_now_add=True)
-    datetime_ready = models.DateTimeField(null=True)
-    datetime_failed = models.DateTimeField(null=True)
+    datetime_ready = models.DateTimeField(null=True, blank=True)
+    datetime_failed = models.DateTimeField(null=True, blank=True)
 
     objects = TaskManager()
 

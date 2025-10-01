@@ -12,6 +12,6 @@ class Command(BaseCommand):
             while True:
                 asyncio.run(run())
                 self.stdout.write(self.style.SUCCESS('Waiting for 60 seconds...'))
-                time.sleep(6)
+                time.sleep(60)
         except (EOFError, KeyboardInterrupt):
             self.stdout.write(self.style.SUCCESS('Stopping download job...'))

@@ -7,6 +7,7 @@ from datetime import datetime
 from .models import Task
 from .storage import Storage
 from .backoff import async_backoff
+from django.utils import timezone
 
 
 logging.basicConfig(level=logging.INFO)
@@ -95,7 +96,7 @@ class RequestsHandler:
                             task.status = Task.Status.FAILED
                     else:
                         task.status = Task.Status.READY
-                        task.datetime_ready = datetime.now()
+                        task.datetime_ready = timezone.now()
                         task.file_partial = ''
                         task.file_completed = self.storage.get_file_name(url)
                     finally:
@@ -107,7 +108,7 @@ class RequestsHandler:
 
 async def run():
     tasks = await Task.objects.get_new_and_failed_tasks()
-    
+
     storage = Storage()
     requests_handler = RequestsHandler(storage)
     await requests_handler.run(tasks)
