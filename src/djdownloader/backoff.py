@@ -1,9 +1,6 @@
 import asyncio
-import logging
 from functools import wraps
 import aiohttp
-
-logging.basicConfig(level=logging.INFO)
 
 
 def async_backoff(tries: int, delay: int, backoff: int = 2):

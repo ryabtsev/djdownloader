@@ -75,35 +75,35 @@ class RequestsHandler:
         """
         TODO: add tracking in the Task model (log field)
         """
+        async def download_wrapper(task):
+            url = task.url
+            task.status = Task.Status.PROGRESS
+            task.file_partial = self.storage.get_file_name(url)
+            task.attempts += 1
+            await task.asave()
+            
+            try:
+                await self.download_file(session, url)
+            except (aiohttp.ClientError, asyncio.TimeoutError) as e:
+                logging.error(f"Failed to download {url} after all retries.")
+                task.datetime_failed = datetime.now()
+
+                if task.attempts >= MAX_ATTEMS:
+                    task.status = Task.Status.FORBIDDEN
+                else:
+                    task.status = Task.Status.FAILED
+            else:
+                task.status = Task.Status.READY
+                task.datetime_ready = timezone.now()
+                task.file_partial = ''
+                task.file_completed = self.storage.get_file_name(url)
+            finally:
+                await task.asave()
+    
         async with aiohttp.ClientSession() as session:
             coroutines = []
             for task in tasks:
-                url = task.url
-                task.status = Task.Status.PROGRESS
-                task.file_partial = self.storage.get_file_name(url)
-                task.attempts += 1
-                await task.asave()
-
-                async def download_wrapper(url):
-                    try:
-                        await self.download_file(session, url)
-                    except (aiohttp.ClientError, asyncio.TimeoutError) as e:
-                        logging.error(f"Failed to download {url} after all retries.")
-                        task.datetime_failed = datetime.now()
-
-                        if task.attempts >= MAX_ATTEMS:
-                            task.status = Task.Status.FORBIDDEN
-                        else:
-                            task.status = Task.Status.FAILED
-                    else:
-                        task.status = Task.Status.READY
-                        task.datetime_ready = timezone.now()
-                        task.file_partial = ''
-                        task.file_completed = self.storage.get_file_name(url)
-                    finally:
-                        await task.asave()
-
-                coroutines.append(download_wrapper(url))
+                coroutines.append(download_wrapper(task))
             await asyncio.gather(*coroutines)
 
 
