@@ -11,10 +11,11 @@ from django.utils import timezone
 from django.conf import settings
 
 
-logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 
-MAX_ATTEMPTS = getattr(settings, 'DJDOWNLOADER_MAX_ATTEMPTS', 10)
+MAX_ATTEMPTS = getattr(settings, 'DJDOWNLOADER_WORKER_MAX_ATTEMPTS', 10)
+
 BACKOFF_MAX_TRIES = getattr(settings, 'DJDOWNLOADER_BACKOFF_MAX_TRIES', 5)
 BACKOFF_DELAY = getattr(settings, 'DJDOWNLOADER_BACKOFF_DELAY', 2)
 
@@ -32,14 +33,14 @@ class RequestsHandler:
         file_name = self.storage.get_file_name(url)
         
         if os.path.exists(self.storage.get_completed_path(url)):
-            logging.info(f"File already downloaded: {file_name}")
+            logger.info(f"File already downloaded: {file_name}")
             return
 
         resume_byte_pos = self.storage.get_partial_file_size(partial_path)
         headers = {}
         if resume_byte_pos > 0:
             headers['Range'] = f'bytes={resume_byte_pos}-'
-            logging.info(f"Resuming download for {file_name} from byte {resume_byte_pos}")
+            logger.info(f"Resuming download for {file_name} from byte {resume_byte_pos}")
 
         try:
             timeout = aiohttp.ClientTimeout(sock_read=15)
@@ -51,26 +52,26 @@ class RequestsHandler:
                     total_size += resume_byte_pos
                 
                 if resume_byte_pos >= total_size and total_size != 0:
-                    logging.info(f"File already complete, moving: {file_name}")
+                    logger.info(f"File already complete, moving: {file_name}")
                     self.storage.move_to_completed(url)
                     return
 
                 mode = 'ab' if resume_byte_pos > 0 else 'wb'
                 with open(partial_path, mode) as f:
-                    logging.info(f"Starting download: {file_name}")
+                    logger.info(f"Starting download: {file_name}")
                     async for chunk in response.content.iter_chunked(8192):
                         f.write(chunk)
                 
                 if os.path.getsize(partial_path) >= total_size:
                     self.storage.move_to_completed(url)
                 else:
-                    logging.warning(f"Download incomplete for {file_name}")
+                    logger.warning(f"Download incomplete for {file_name}")
 
         except (aiohttp.ClientError, asyncio.TimeoutError) as e:
-            logging.error(f"Error downloading {file_name} after multiple retries: {e}")
+            logger.error(f"Error downloading {file_name} after multiple retries: {e}")
             raise  # Re-raise the exception to be handled by the backoff decorator
         except Exception as e:
-            logging.error(f"An unexpected error occurred for {file_name}: {e}")
+            logger.error(f"An unexpected error occurred for {file_name}: {e}")
 
     async def run(self, tasks: list):
         """
@@ -86,7 +87,7 @@ class RequestsHandler:
             try:
                 await self.download_file(session, url)
             except (aiohttp.ClientError, asyncio.TimeoutError) as e:
-                logging.error(f"Failed to download {url} after all retries.")
+                logger.error(f"Failed to download {url} after all retries.")
                 task.datetime_failed = datetime.now()
 
                 if task.attempts >= MAX_ATTEMPTS:
