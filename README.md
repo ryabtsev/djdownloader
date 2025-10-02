@@ -2,6 +2,12 @@
 
 DjDownloader is a Django app that provides a download worker for downloading files in the background.
 
+## Usage
+
+To use the download worker, you need to create a `Task` object in the database. The worker will automatically pick up new tasks and start downloading the files.
+
+You can create a `Task` object programmatically or through the Django admin interface.
+
 ## Installation
 
 To install the package, you can use pip:
