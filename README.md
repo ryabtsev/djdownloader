@@ -37,7 +37,7 @@ DJDOWNLOADER_BACKOFF_DELAY = 2
 
 `mysite/*` is example of installation
 
-## Start Instant Background Download Worker 
+## Start instant background download worker 
 
 ```bash
 python manage.py djdownloader
