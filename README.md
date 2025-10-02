@@ -10,6 +10,8 @@ You can create a `Task` object programmatically or through the Django admin inte
 
 ## Installation
 
+**`mysite/*` is example of installation**
+
 To install the package, you can use pip:
 
 ```bash
@@ -34,8 +36,6 @@ DJDOWNLOADER_WORKER_MAX_PARALLEL_DOWNLOADS = 10  # TBD
 DJDOWNLOADER_BACKOFF_MAX_TRIES = 5
 DJDOWNLOADER_BACKOFF_DELAY = 2
 ```
-
-`mysite/*` is example of installation
 
 ## Start instant background download worker 
 
