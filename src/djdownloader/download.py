@@ -68,7 +68,7 @@ class RequestsHandler:
                     logger.warning(f"Download incomplete for {file_name}")
 
         except (aiohttp.ClientError, asyncio.TimeoutError) as e:
-            logger.error(f"Error downloading {file_name} after multiple retries: {e}")
+            logger.error(f"Error downloading {file_name}: {e}")
             raise  # Re-raise the exception to be handled by the backoff decorator
         except Exception as e:
             logger.error(f"An unexpected error occurred for {file_name}: {e}")
@@ -91,8 +91,10 @@ class RequestsHandler:
                 task.datetime_failed = datetime.now()
 
                 if task.attempts >= MAX_ATTEMPTS:
+                    # Set status to FORBIDDEN, as it's likely a permanent issue (e.g., forbidden URL or file is inaccessible).
                     task.status = Task.Status.FORBIDDEN
                 else:
+                    # Set status to FAILED; it will be retried in the next worker iteration.
                     task.status = Task.Status.FAILED
             else:
                 task.status = Task.Status.READY
