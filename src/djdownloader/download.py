@@ -3,6 +3,7 @@ import asyncio
 import os
 import logging
 from datetime import datetime
+from http import HTTPStatus
 
 from .models import Task
 from .storage import Storage
@@ -48,7 +49,7 @@ class RequestsHandler:
                 response.raise_for_status()
                 
                 total_size = int(response.headers.get('content-length', 0))
-                if resume_byte_pos > 0 and response.status == 206:  # Partial Content
+                if resume_byte_pos > 0 and response.status == HTTPStatus.PARTIAL_CONTENT:
                     total_size += resume_byte_pos
                 
                 if resume_byte_pos >= total_size and total_size != 0:
