@@ -10,7 +10,7 @@ You can create a `Task` object programmatically or through the Django admin inte
 
 ## Installation
 
-**`mysite/*` is example of installation**
+**`mysite/*` in repository is example of installation**
 
 To install the package, you can use pip:
 
