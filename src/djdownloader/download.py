@@ -14,7 +14,7 @@ from django.conf import settings
 logger = logging.getLogger(__name__)
 
 
-MAX_ATTEMPTS = getattr(settings, 'DJDOWNLOADER_WORKER_MAX_ATTEMPTS', 10)
+MAX_ATTEMPTS = getattr(settings, 'DJDOWNLOADER_WORKER_MAX_ATTEMPTS_FOR_FILE', 10)
 
 BACKOFF_MAX_TRIES = getattr(settings, 'DJDOWNLOADER_BACKOFF_MAX_TRIES', 5)
 BACKOFF_DELAY = getattr(settings, 'DJDOWNLOADER_BACKOFF_DELAY', 2)

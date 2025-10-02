@@ -9,7 +9,7 @@ class Command(BaseCommand):
 
     def handle(self, *args, **options):
         self.stdout.write(self.style.SUCCESS('Starting download job...'))
-        sleep_time = getattr(settings, 'DJDOWNLOADER_WORKER_SLEEP_TIME', 60)
+        sleep_time = getattr(settings, 'DJDOWNLOADER_WORKER_SLEEP_TIME_BETWEEN_ITERATIONS', 60)
         try:
             while True:
                 asyncio.run(run())
