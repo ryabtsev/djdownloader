@@ -19,7 +19,13 @@ INSTALLED_APPS = [
 ]
 ```
 
-Other settings: TBD
+**Optional settings:**
+```
+DJDOWNLOADER_MAX_ATTEMPTS = 10
+DJDOWNLOADER_BACKOFF_MAX_TRIES = 5
+DJDOWNLOADER_BACKOFF_DELAY = 2
+DJDOWNLOADER_WORKER_SLEEP_TIME = 60
+```
 
 `mysite/*` is example of installation
 

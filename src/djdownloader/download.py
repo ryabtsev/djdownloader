@@ -8,14 +8,15 @@ from .models import Task
 from .storage import Storage
 from .backoff import async_backoff
 from django.utils import timezone
+from django.conf import settings
 
 
 logging.basicConfig(level=logging.INFO)
 
 
-MAX_ATTEMS = 10  # max worker iteration for file 
-BACKOFF_MAX_TRIES = 5
-BACKOFF_DELAY = 2
+MAX_ATTEMPTS = getattr(settings, 'DJDOWNLOADER_MAX_ATTEMPTS', 10)
+BACKOFF_MAX_TRIES = getattr(settings, 'DJDOWNLOADER_BACKOFF_MAX_TRIES', 5)
+BACKOFF_DELAY = getattr(settings, 'DJDOWNLOADER_BACKOFF_DELAY', 2)
 
 
 class RequestsHandler:
@@ -88,7 +89,7 @@ class RequestsHandler:
                 logging.error(f"Failed to download {url} after all retries.")
                 task.datetime_failed = datetime.now()
 
-                if task.attempts >= MAX_ATTEMS:
+                if task.attempts >= MAX_ATTEMPTS:
                     task.status = Task.Status.FORBIDDEN
                 else:
                     task.status = Task.Status.FAILED
